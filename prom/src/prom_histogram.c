@@ -30,7 +30,7 @@
 #include "prom_metric_sample_histogram_i.h"
 #include "prom_metric_sample_histogram_t.h"
 
-
+prom_histogram_buckets_t *prom_histogram_default_buckets;
 
 prom_histogram_t* prom_histogram_new(const char *name,
                                      const char *help,
