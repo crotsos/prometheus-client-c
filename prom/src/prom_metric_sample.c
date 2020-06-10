@@ -32,7 +32,7 @@ prom_metric_sample_t* prom_metric_sample_new(prom_metric_type_t type, const char
   prom_metric_sample_t *self = (prom_metric_sample_t*) prom_malloc(sizeof(prom_metric_sample_t));
   self->type = type;
   self->l_value = prom_strdup(l_value);
-  self->r_value = ATOMIC_VAR_INIT(r_value);
+  self->r_value = r_value;
   return self;
 }
 
@@ -65,13 +65,8 @@ int prom_metric_sample_add(prom_metric_sample_t *self, double r_value) {
   if (r_value < 0) {
     return 1;
   }
-  _Atomic double old = atomic_load(&self->r_value);
-  for (;;) {
-    _Atomic double new = ATOMIC_VAR_INIT(old + r_value);
-    if (atomic_compare_exchange_weak(&self->r_value, &old, new)) {
-      return 0;
-    }
-  }
+  self->r_value += r_value;
+  return 0;
 }
 
 int prom_metric_sample_sub(prom_metric_sample_t *self, double r_value) {
@@ -80,13 +75,8 @@ int prom_metric_sample_sub(prom_metric_sample_t *self, double r_value) {
     PROM_LOG(PROM_METRIC_INCORRECT_TYPE);
     return 1;
   }
-  _Atomic double old = atomic_load(&self->r_value);
-  for (;;) {
-    _Atomic double new = ATOMIC_VAR_INIT(old - r_value);
-    if (atomic_compare_exchange_weak(&self->r_value, &old, new)) {
-      return 0;
-    }
-  }
+  self->r_value -= r_value;
+  return 0;
 }
 
 int prom_metric_sample_set(prom_metric_sample_t *self, double r_value) {
@@ -94,6 +84,6 @@ int prom_metric_sample_set(prom_metric_sample_t *self, double r_value) {
     PROM_LOG(PROM_METRIC_INCORRECT_TYPE);
     return 1;
   }
-  atomic_store(&self->r_value, r_value);
+  self->r_value = r_value;
   return 0;
 }
